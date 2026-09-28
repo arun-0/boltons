@@ -58,7 +58,7 @@ __all__ = ['camel2under', 'under2camel', 'slugify', 'split_punct_ws',
            'args2cmd', 'args2sh', 'parse_int_list', 'format_int_list',
            'complement_int_list', 'int_ranges_from_int_list', 'MultiReplace',
            'multi_replace', 'unwrap_text', 'removeprefix',
-           'human_readable_list', 'ellipsize']
+           'human_readable_list', 'ellipsize', 'shorten_chars']
 
 
 _punct_ws_str = string.punctuation + string.whitespace
@@ -1389,3 +1389,51 @@ def ellipsize(text, max_len=160, *, ellipsis='…'):
     if not end:
         return text[:limit] + ellipsis
     return text[:end] + ellipsis
+
+
+def shorten_chars(text, max_len, *, ellipsis='…'):
+    """Truncate *text* to at most *max_len* characters, cutting at the
+    character limit regardless of word boundaries, and appending
+    *ellipsis*. The returned string, ellipsis included, is never
+    longer than *max_len*.
+
+    Unlike :func:`ellipsize`, which only ever cuts at whitespace so
+    words are kept whole, :func:`shorten_chars` always cuts exactly
+    at *max_len* characters, even mid-word. This mirrors the standard
+    library's :func:`textwrap.shorten`, except that it truncates
+    characters, not words.
+
+    Text short enough to fit is returned unchanged:
+
+    >>> shorten_chars('Hello, World!', 13)
+    'Hello, World!'
+
+    Longer text is hard-cut at the character limit:
+
+    >>> shorten_chars('123456789', 8, ellipsis='...')
+    '12345...'
+    >>> shorten_chars('123456789', 9, ellipsis='...')
+    '123456789'
+
+    A falsy value, such as ``None`` or ``''``, is returned unchanged:
+
+    >>> shorten_chars(None, 8) is None
+    True
+    >>> shorten_chars('', 8)
+    ''
+
+    Args:
+        text (str): The string to truncate.
+        max_len (int): Maximum length of the result, including the
+            ellipsis. Must be greater than ``len(ellipsis)``.
+        ellipsis (str): The suffix appended to truncated text.
+            Defaults to ``'…'`` (U+2026, HORIZONTAL ELLIPSIS).
+    """
+    if max_len <= len(ellipsis):
+        raise ValueError('expected max_len greater than length of'
+                         ' ellipsis %r, not %r' % (ellipsis, max_len))
+    if not text:
+        return text
+    if len(text) <= max_len:
+        return text
+    return text[:max_len - len(ellipsis)] + ellipsis

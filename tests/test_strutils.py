@@ -386,6 +386,41 @@ def test_ellipsize():
         ellipsize('anything', 3, ellipsis='...')
 
 
+def test_shorten_chars():
+    shorten_chars = strutils.shorten_chars
+
+    # short enough text is returned unchanged
+    assert shorten_chars('Hello, World!', 20) == 'Hello, World!'
+    # exact boundary is still a no-op
+    assert shorten_chars('Hello, World!', 13) == 'Hello, World!'
+
+    # longer text is hard-cut at the character limit, mid-word,
+    # never at a space boundary
+    res = shorten_chars('The quick brown fox jumps', 15)
+    assert res == 'The quick brow…'
+    assert len(res) == 15
+
+    # custom ellipsis string
+    res = shorten_chars('The quick brown fox jumps', 15, ellipsis='...')
+    assert res == 'The quick br...'
+    assert len(res) == 15
+
+    # falsy input is returned unchanged
+    assert shorten_chars(None, 8) is None
+    assert shorten_chars('', 8) == ''
+
+    # every result respects max_len
+    text = 'the wheels on the bus go round and round'
+    for max_len in range(2, len(text) + 1):
+        assert len(shorten_chars(text, max_len)) <= max_len
+
+    # max_len must exceed the length of the ellipsis
+    with pytest.raises(ValueError):
+        shorten_chars('anything', 1)
+    with pytest.raises(ValueError):
+        shorten_chars('anything', 3, ellipsis='...')
+
+
 def test_args2sh_sep():
     assert strutils.args2sh(['aa', 'bb']) == 'aa bb'
     assert strutils.args2sh(['aa', 'bb'], sep='|') == 'aa|bb'
