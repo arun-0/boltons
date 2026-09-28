@@ -1,3 +1,5 @@
+import inspect
+
 import pytest
 from boltons.funcutils import wraps, FunctionBuilder
 
@@ -249,6 +251,66 @@ def test_wraps_expected():
         return wrapped
 
     assert expect_dict(wrappable_func)(1, 2) == (1, 2, 6)
+
+    def expect_triple_not_kwonly(func):
+        @wraps(func, expected=[('c', 5, False)])
+        def wrapped(*args, **kwargs):
+            c = kwargs.pop('c')
+            return func(*args, **kwargs) + (c,)
+        return wrapped
+
+    not_kwonly = expect_triple_not_kwonly(wrappable_func)
+    assert not_kwonly(1, 2) == (1, 2, 5)
+    # not kwonly, so it can still be passed positionally
+    assert not_kwonly(1, 2, 7) == (1, 2, 7)
+
+
+def test_wraps_expected_kwonly():
+    def expect_kwonly(func):
+        @wraps(func, expected=[('extra', 5, True)])
+        def wrapped(*args, **kwargs):
+            extra = kwargs.pop('extra')
+            return func(*args, **kwargs) + (extra,)
+        return wrapped
+
+    kwonly_func = expect_kwonly(wrappable_func)
+
+    # follow_wrapped=False because __wrapped__ is set by default and
+    # would otherwise cause inspect.signature to reflect the original
+    # (unwrapped) function's signature instead of the generated one.
+    sig = inspect.signature(kwonly_func, follow_wrapped=False)
+    params = list(sig.parameters.values())
+    extra_param = sig.parameters['extra']
+    assert extra_param.kind == inspect.Parameter.KEYWORD_ONLY
+    assert extra_param.default == 5
+
+    # a, b are positional-or-keyword, extra comes after the implicit "*"
+    assert [p.kind for p in params] == [
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        inspect.Parameter.KEYWORD_ONLY,
+    ]
+
+    # default is used when omitted
+    assert kwonly_func(1, 2) == (1, 2, 5)
+
+    # can be passed by keyword
+    assert kwonly_func(1, 2, extra=9) == (1, 2, 9)
+
+    # cannot be passed positionally, since it is keyword-only
+    with pytest.raises(TypeError):
+        kwonly_func(1, 2, 9)
+
+
+def test_wraps_expected_invalid_tuple():
+    def expect_invalid(func):
+        @wraps(func, expected=[('extra', 5, True, 'bogus')])
+        def wrapped(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapped
+
+    with pytest.raises(ValueError):
+        expect_invalid(wrappable_func)
 
 
 def test_defaults_dict():
