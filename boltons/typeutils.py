@@ -167,6 +167,25 @@ def get_all_subclasses(cls):
     return ret
 
 
+def typename(obj):
+    """Returns the name of an object's type. For example,
+    ``1`` is an :class:`int`, so its typename is ``'int'``.
+    Meant as a lightweight convenience for the extremely common
+    pattern of ``type(obj).__name__``.
+
+    Args:
+        obj (object): The object in question.
+
+    >>> typename(1)
+    'int'
+    >>> typename('hello')
+    'str'
+    >>> typename([])
+    'list'
+    """
+    return type(obj).__name__
+
+
 class classproperty:
     """Much like a :class:`property`, but the wrapped get function is a
     class method.  For simplicity, only read-only properties are
