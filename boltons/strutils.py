@@ -1330,17 +1330,18 @@ def human_readable_list(items: typing.Sequence[str], delimiter: str = ',', conju
 
 
 
-def ellipsize(text, max_len=160, *, ellipsis='…'):
-    """Truncate *text* to at most *max_len* characters, cutting at the
-    last space before the limit and appending *ellipsis*. The returned
-    string, ellipsis included, is never longer than *max_len*.
+def ellipsize(text, max_len=160, *, ellipsis='…', preserve_words=True):
+    """Truncate *text* to at most *max_len* characters, appending
+    *ellipsis*. The returned string, ellipsis included, is never
+    longer than *max_len*.
 
     Text short enough to fit is returned unchanged:
 
     >>> ellipsize('Hello, World!', 16)
     'Hello, World!'
 
-    Longer text is cut at a space, never mid-word, and trailing
+    By default (``preserve_words=True``), longer text is cut at the
+    last space before the limit, never mid-word, and trailing
     punctuation at the cut is stripped:
 
     >>> ellipsize('Beautiful is better than ugly. Explicit is better.', 31)
@@ -1357,12 +1358,27 @@ def ellipsize(text, max_len=160, *, ellipsis='…'):
     >>> ellipsize('antidisestablishmentarianism', 10)
     'antidises…'
 
+    Pass ``preserve_words=False`` to always hard-cut at exactly
+    *max_len* characters, ignoring word boundaries entirely. This is
+    useful when a strict character budget matters more than keeping
+    words intact (unlike :func:`textwrap.shorten`, which only ever
+    truncates whole words):
+
+    >>> ellipsize('The quick brown fox jumps', 16, preserve_words=False)
+    'The quick brown…'
+    >>> ellipsize('123456789', 8, ellipsis='...', preserve_words=False)
+    '12345...'
+
     Args:
         text (str): The string to truncate.
         max_len (int): Maximum length of the result, including the
             ellipsis. Must be greater than ``len(ellipsis)``.
         ellipsis (str): The suffix appended to truncated text.
             Defaults to ``'…'`` (U+2026, HORIZONTAL ELLIPSIS).
+        preserve_words (bool): Whether to avoid cutting in the
+            middle of a word when possible. Defaults to ``True``.
+            Set to ``False`` to hard-cut at exactly *max_len*
+            characters regardless of word boundaries.
     """
     if max_len <= len(ellipsis):
         raise ValueError('expected max_len greater than length of'
@@ -1370,6 +1386,8 @@ def ellipsize(text, max_len=160, *, ellipsis='…'):
     if len(text) <= max_len:
         return text
     limit = max_len - len(ellipsis)
+    if not preserve_words:
+        return text[:limit] + ellipsis
     cut_at = text.rfind(' ', 0, limit + 1)
     if cut_at <= 0:
         # no space boundary available, hard-cut mid-token

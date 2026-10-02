@@ -385,6 +385,45 @@ def test_ellipsize():
     with pytest.raises(ValueError):
         ellipsize('anything', 3, ellipsis='...')
 
+    # default behavior is explicitly preserve_words=True
+    for max_len in range(2, len(text) + 1):
+        assert ellipsize(text, max_len) == ellipsize(
+            text, max_len, preserve_words=True)
+    assert (ellipsize('Beautiful is better than ugly. Explicit is better.', 31)
+            == ellipsize('Beautiful is better than ugly. Explicit is better.',
+                         31, preserve_words=True))
+
+
+def test_ellipsize_preserve_words_false():
+    ellipsize = strutils.ellipsize
+
+    # hard cut ignores word boundaries, even when it happens to land
+    # right after a space
+    assert ellipsize('The quick brown fox jumps', 16,
+                      preserve_words=False) == 'The quick brown…'
+
+    # a cut that truly lands mid-word
+    assert ellipsize('123456789', 8, ellipsis='...',
+                      preserve_words=False) == '12345...'
+    # fits exactly: returned unchanged
+    assert ellipsize('123456789', 9, ellipsis='...',
+                      preserve_words=False) == '123456789'
+
+    # short enough text is returned unchanged regardless of preserve_words
+    assert ellipsize('Hello, World!', preserve_words=False) == 'Hello, World!'
+    assert ellipsize('Hello, World!', 13, preserve_words=False) == 'Hello, World!'
+
+    # every result respects max_len
+    text = 'the wheels on the bus go round and round'
+    for max_len in range(2, len(text) + 1):
+        assert len(ellipsize(text, max_len, preserve_words=False)) <= max_len
+
+    # max_len must still exceed the length of the ellipsis
+    with pytest.raises(ValueError):
+        ellipsize('anything', 1, preserve_words=False)
+    with pytest.raises(ValueError):
+        ellipsize('anything', 3, ellipsis='...', preserve_words=False)
+
 
 def test_args2sh_sep():
     assert strutils.args2sh(['aa', 'bb']) == 'aa bb'
