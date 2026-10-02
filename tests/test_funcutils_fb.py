@@ -334,6 +334,73 @@ def test_get_arg_names():
     assert fb_example.get_arg_names(only_required=True) == ('req',)
 
 
+def test_from_func_body_roundtrip():
+    # https://github.com/mahmoud/boltons/issues/4
+    # from_func used to always produce a 'pass' body, discarding the
+    # original function's logic.
+    def foo(a, b=2):
+        return a / b
+
+    fb = FunctionBuilder.from_func(foo)
+    rebuilt = fb.get_func()
+
+    assert rebuilt(10) == foo(10) == 5
+    assert rebuilt(9, 3) == foo(9, 3) == 3
+
+
+def test_from_func_body_branching():
+    # ensure nested indentation (loop + if/else) survives the
+    # from_func/get_func round trip
+    def sum_positive(nums):
+        total = 0
+        for n in nums:
+            if n > 0:
+                total += n
+            else:
+                total -= 1
+        return total
+
+    fb = FunctionBuilder.from_func(sum_positive)
+    rebuilt = fb.get_func()
+
+    assert rebuilt([1, -2, 3, -4]) == sum_positive([1, -2, 3, -4])
+    assert rebuilt([]) == sum_positive([]) == 0
+
+
+def test_from_func_body_method():
+    # from_func should work on an unbound method reference, preserving
+    # its (branching) body
+    class Foo:
+        def method(self, x):
+            if x > 0:
+                return x * 2
+            else:
+                return -x
+
+    fb = FunctionBuilder.from_func(Foo.method)
+    rebuilt = fb.get_func()
+
+    assert rebuilt(Foo(), 3) == Foo().method(3) == 6
+    assert rebuilt(Foo(), -3) == Foo().method(-3) == 3
+
+
+def test_from_func_body_builtin_fallback():
+    # builtins have no accessible Python source, so from_func should
+    # fall back to the documented default body without crashing
+    fb = FunctionBuilder.from_func(len)
+    assert fb.body == 'pass'
+    fb.get_func()  # should not raise
+
+
+def test_from_func_body_lambda_fallback():
+    # lambdas aren't supported for body extraction (their source line
+    # may contain more than just the lambda); this documents the
+    # current, intentional fallback behavior
+    fb = FunctionBuilder.from_func(lambda x: x + 1)
+    assert fb.body == 'pass'
+    fb.get_func()  # should not raise
+
+
 @pytest.mark.parametrize(
     "args, varargs, varkw, defaults, invocation_str, sig_str",
     [

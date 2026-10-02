@@ -34,10 +34,12 @@ support. ``funcutils`` generally stays in the same vein, adding to and
 correcting Python's standard metaprogramming facilities.
 """
 
+import ast
 import sys
 import inspect
 import functools
 import itertools
+import textwrap
 import threading
 from inspect import formatannotation
 from types import FunctionType, MethodType
@@ -878,7 +880,43 @@ class FunctionBuilder:
         if inspect.iscoroutinefunction(func):
             kwargs['is_async'] = True
 
+        body = cls._body_from_func(
+            func.func if isinstance(func, functools.partial) else func)
+        if body is not None:
+            kwargs['body'] = body
+
         return cls(**kwargs)
+
+    @staticmethod
+    def _body_from_func(func):
+        """Best-effort extraction of *func*'s source code body (i.e.,
+        everything but the ``def`` line) as a string suitable for use
+        as a :class:`FunctionBuilder`'s *body*. Returns ``None`` if the
+        source isn't available or can't be parsed, e.g., for builtins,
+        lambdas, or functions defined interactively.
+        """
+        try:
+            source = inspect.getsource(func)
+        except (OSError, TypeError):
+            return None
+
+        source = textwrap.dedent(source)
+        try:
+            node = ast.parse(source).body[0]
+        except SyntaxError:
+            return None
+
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            return None
+        if not node.body:
+            return None
+
+        lines = source.splitlines()
+        body_lines = lines[node.body[0].lineno - 1:]
+        body_src = textwrap.dedent('\n'.join(body_lines)).strip('\n')
+        if not body_src.strip():
+            return None
+        return body_src
 
     def get_func(self, execdict=None, add_source=True, with_dict=True):
         """Compile and return a new function based on the current values of

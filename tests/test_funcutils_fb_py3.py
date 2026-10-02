@@ -371,6 +371,21 @@ def test_wraps_target_kwonly_arg_with_varargs():
     assert wraps(g)(f)(1, 2, 3) == (1, (3,), 2)
 
 
+def test_from_func_body_async():
+    # https://github.com/mahmoud/boltons/issues/4
+    # from_func should extract the real body source for async
+    # functions too, instead of defaulting to 'pass'
+    async def foo(x):
+        if x:
+            return x
+        return 0
+
+    fb = FunctionBuilder.from_func(foo)
+    assert fb.body != 'pass'
+    assert 'return x' in fb.body
+    assert 'return 0' in fb.body
+
+
 def test_wraps_uninspectable_target():
     # a wrapper without an introspectable signature (e.g. some C
     # callables) falls back to signature-based forwarding at wrap time
