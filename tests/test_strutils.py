@@ -386,6 +386,62 @@ def test_ellipsize():
         ellipsize('anything', 3, ellipsis='...')
 
 
+def test_ellipsize_preserve_words():
+    ellipsize = strutils.ellipsize
+
+    text = 'The quick brown fox jumps'
+
+    # explicit preserve_words=True matches the (word-preserving) default,
+    # across a range of max_len values
+    for max_len in range(4, len(text) + 1):
+        assert ellipsize(text, max_len) == ellipsize(text, max_len,
+                                                       preserve_words=True)
+
+    # preserve_words=False hard-cuts at exactly the character limit,
+    # even when that lands right after/inside a space, and does not
+    # strip trailing whitespace/punctuation the way word-preserving
+    # mode does
+    res = ellipsize(text, 16, preserve_words=False)
+    assert res == 'The quick brown…'
+    assert res == ellipsize(text, 16, preserve_words=True)
+
+    # a cut that lands just past a space keeps the trailing space
+    res = ellipsize('The quick brown fox jumps', 17, preserve_words=False)
+    assert res == text[:17 - 1] + '…'
+    assert res.startswith('The quick brown ')
+
+    # trailing sentence punctuation is kept verbatim with
+    # preserve_words=False, unlike the word-preserving default
+    text2 = 'Beautiful is better than ugly. Explicit is better.'
+    preserved = ellipsize(text2, 31, preserve_words=True)
+    hard_cut = ellipsize(text2, 31, preserve_words=False)
+    assert preserved == 'Beautiful is better than ugly…'
+    assert hard_cut == text2[:30] + '…'
+    assert hard_cut != preserved
+
+    # true mid-word cut
+    assert ellipsize('123456789', 8, ellipsis='...',
+                      preserve_words=False) == '12345...'
+
+    # text that already fits is returned unchanged either way
+    short = 'Hello, World!'
+    assert ellipsize(short, preserve_words=False) == short
+    assert ellipsize(short, 13, preserve_words=False) == short
+    assert (ellipsize(short, preserve_words=False)
+            == ellipsize(short, preserve_words=True))
+
+    # every result respects max_len, with preserve_words=False too
+    for max_len in range(2, len(text) + 1):
+        assert len(ellipsize(text, max_len, preserve_words=False)) <= max_len
+
+    # max_len must exceed the length of the ellipsis, regardless of
+    # preserve_words
+    with pytest.raises(ValueError):
+        ellipsize('anything', 1, preserve_words=False)
+    with pytest.raises(ValueError):
+        ellipsize('anything', 3, ellipsis='...', preserve_words=False)
+
+
 def test_args2sh_sep():
     assert strutils.args2sh(['aa', 'bb']) == 'aa bb'
     assert strutils.args2sh(['aa', 'bb'], sep='|') == 'aa|bb'
