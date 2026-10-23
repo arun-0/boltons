@@ -397,3 +397,12 @@ def test_args2cmd_sep():
     assert strutils.args2cmd(['aa', 'bb']) == 'aa bb'
     assert strutils.args2cmd(['aa', 'bb'], sep='|') == 'aa|bb'
     assert strutils.args2cmd(['a a', 'bb'], sep='|') == '"a a"|bb'
+
+def test_shorten_chars():
+    shorten_chars = strutils.shorten_chars
+    assert shorten_chars('123456789', width=8) == '12345...'
+    assert shorten_chars('123456789', width=9) == '123456789'
+    assert shorten_chars('long text', width=4, placeholder='..') == 'lo..'
+    assert shorten_chars('long text', width=2, placeholder='...') == '...'
+    assert shorten_chars(None, width=8) is None
+    assert shorten_chars('', width=8) == ''
