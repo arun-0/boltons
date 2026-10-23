@@ -1,9 +1,18 @@
 import copy
 import pickle
 
-from boltons.typeutils import make_sentinel
+from boltons.typeutils import make_sentinel, typename
 
 NOT_SET = make_sentinel('not_set', var_name='NOT_SET')
+
+
+def test_typename():
+    class CustomType:
+        pass
+
+    assert typename(1) == 'int'
+    assert typename(CustomType()) == 'CustomType'
+
 
 def test_sentinel_falsiness():
     assert not NOT_SET
