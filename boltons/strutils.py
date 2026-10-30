@@ -58,7 +58,7 @@ __all__ = ['camel2under', 'under2camel', 'slugify', 'split_punct_ws',
            'args2cmd', 'args2sh', 'parse_int_list', 'format_int_list',
            'complement_int_list', 'int_ranges_from_int_list', 'MultiReplace',
            'multi_replace', 'unwrap_text', 'removeprefix',
-           'human_readable_list', 'ellipsize']
+           'human_readable_list', 'ellipsize', 'shorten']
 
 
 _punct_ws_str = string.punctuation + string.whitespace
@@ -1328,6 +1328,30 @@ def human_readable_list(items: typing.Sequence[str], delimiter: str = ',', conju
 
     return f'{delimiter.join(items[:-1])}{delimiter if oxford else " "}{conjunction} {items[-1]}'
 
+
+
+def shorten(text, width, placeholder='...'):
+    """Truncate *text* to *width* characters, regardless of word boundaries.
+
+    The *placeholder* is appended when the text is truncated. If it is
+    longer than *width*, the result consists of the placeholder alone.
+    Empty or short enough text is returned unchanged.
+
+    >>> shorten('123456789', width=8)
+    '12345...'
+    >>> shorten('123456789', width=9)
+    '123456789'
+    >>> shorten(None, width=8) is None
+    True
+
+    Args:
+        text (str): The string to truncate.
+        width (int): Maximum length of the result when the placeholder fits.
+        placeholder (str): The suffix appended to truncated text.
+    """
+    if not text or len(text) <= width:
+        return text
+    return text[:max(0, width - len(placeholder))] + placeholder
 
 
 def ellipsize(text, max_len=160, *, ellipsis='…'):
