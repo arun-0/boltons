@@ -58,7 +58,7 @@ __all__ = ['camel2under', 'under2camel', 'slugify', 'split_punct_ws',
            'args2cmd', 'args2sh', 'parse_int_list', 'format_int_list',
            'complement_int_list', 'int_ranges_from_int_list', 'MultiReplace',
            'multi_replace', 'unwrap_text', 'removeprefix',
-           'human_readable_list', 'ellipsize']
+           'human_readable_list', 'ellipsize', 'shorten']
 
 
 _punct_ws_str = string.punctuation + string.whitespace
@@ -1328,6 +1328,29 @@ def human_readable_list(items: typing.Sequence[str], delimiter: str = ',', conju
 
     return f'{delimiter.join(items[:-1])}{delimiter if oxford else " "}{conjunction} {items[-1]}'
 
+
+
+def shorten(text, width, placeholder='...'):
+    """Shorten *text* to *width* characters by truncating individual
+    characters, then appending *placeholder*.
+
+    >>> shorten('123456789', width=8)
+    '12345...'
+    >>> shorten('123456789', width=9)
+    '123456789'
+    >>> shorten(None, width=8) is None
+    True
+
+    Args:
+        text (str): The string to truncate, or a falsey value to return
+            unchanged.
+        width (int): The maximum width before truncation.
+        placeholder (str): Suffix to append when truncating. Defaults to
+            ``'...'``.
+    """
+    if not text or len(text) <= width:
+        return text
+    return text[:max(0, width - len(placeholder))] + placeholder
 
 
 def ellipsize(text, max_len=160, *, ellipsis='…'):
