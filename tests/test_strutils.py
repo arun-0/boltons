@@ -386,6 +386,18 @@ def test_ellipsize():
         ellipsize('anything', 3, ellipsis='...')
 
 
+def test_shorten():
+    shorten = strutils.shorten
+
+    assert shorten('123456789', width=8) == '12345...'
+    assert shorten('123456789', width=9) == '123456789'
+    assert shorten('a sentence, clipped mid-word', width=13) == 'a sentence...'
+    assert shorten('abcdef', width=3, placeholder='') == 'abc'
+    assert shorten('abcdef', width=2, placeholder='...') == '...'
+    assert shorten(None, width=8) is None
+    assert shorten('', width=8) == ''
+
+
 def test_args2sh_sep():
     assert strutils.args2sh(['aa', 'bb']) == 'aa bb'
     assert strutils.args2sh(['aa', 'bb'], sep='|') == 'aa|bb'
