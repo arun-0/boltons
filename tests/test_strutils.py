@@ -348,6 +348,17 @@ def test_multi_replace_empty_mapping():
     assert strutils.multi_replace('foo bar', {}) == 'foo bar'
 
 
+def test_truncate():
+    truncate = strutils.truncate
+
+    assert truncate('123456789', width=8) == '12345...'
+    assert truncate('123456789', width=9) == '123456789'
+    assert truncate('abcdefghij', width=5, placeholder='!') == 'abcd!'
+    assert truncate('abcdefghij', width=2, placeholder='...') == '...'
+    assert truncate('', width=2) == ''
+    assert truncate(None, width=2) is None
+
+
 def test_ellipsize():
     ellipsize = strutils.ellipsize
 

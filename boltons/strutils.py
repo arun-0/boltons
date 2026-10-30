@@ -58,7 +58,7 @@ __all__ = ['camel2under', 'under2camel', 'slugify', 'split_punct_ws',
            'args2cmd', 'args2sh', 'parse_int_list', 'format_int_list',
            'complement_int_list', 'int_ranges_from_int_list', 'MultiReplace',
            'multi_replace', 'unwrap_text', 'removeprefix',
-           'human_readable_list', 'ellipsize']
+           'human_readable_list', 'ellipsize', 'truncate']
 
 
 _punct_ws_str = string.punctuation + string.whitespace
@@ -1389,3 +1389,28 @@ def ellipsize(text, max_len=160, *, ellipsis='…'):
     if not end:
         return text[:limit] + ellipsis
     return text[:end] + ellipsis
+
+
+def truncate(text, width, placeholder='...'):
+    """Truncate *text* to *width* characters, cutting at any character.
+
+    The length of *placeholder* is included in *width*. If the text is
+    already short enough, it is returned unchanged. A ``None`` or empty
+    value is returned unchanged as well.
+
+    >>> truncate('123456789', width=8)
+    '12345...'
+    >>> truncate('123456789', width=9)
+    '123456789'
+    >>> truncate(None, width=8) is None
+    True
+
+    Args:
+        text (str): The string to truncate.
+        width (int): Maximum length of the result, including *placeholder*.
+        placeholder (str): Suffix appended when text is truncated.
+            Defaults to ``'...'``.
+    """
+    if not text or len(text) <= width:
+        return text
+    return text[:max(0, width - len(placeholder))] + placeholder
