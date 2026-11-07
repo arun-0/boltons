@@ -39,6 +39,15 @@ from collections import deque
 _issubclass = issubclass
 
 
+def typename(obj):
+    """Return the name of the type of *obj*.
+
+    >>> typename(1)
+    'int'
+    """
+    return type(obj).__name__
+
+
 def make_sentinel(name='_MISSING', var_name=None):
     """Creates and returns a new **instance** of a new class, suitable for
     usage as a "sentinel", a kind of singleton often used to indicate
